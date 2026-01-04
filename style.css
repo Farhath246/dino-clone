@@ -1,0 +1,159 @@
+/* ===== CSS VARIABLES FOR DAY/NIGHT THEME ===== */
+:root {
+  --bg-color: #f7f7f7;
+  --ground-color: #535353;
+  --text-color: #535353;
+  --canvas-bg: #f7f7f7;
+  --transition-speed: 1s;
+}
+
+.night-mode {
+  --bg-color: #1a1a2e;
+  --ground-color: #e0e0e0;
+  --text-color: #e0e0e0;
+  --canvas-bg: #1a1a2e;
+}
+
+/* ===== BASE STYLES ===== */
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
+
+body {
+  font-family: 'Press Start 2P', cursive;
+  background: var(--bg-color);
+  min-height: 100vh;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  transition: background var(--transition-speed) ease;
+  overflow: hidden;
+}
+
+/* ===== GAME CONTAINER ===== */
+.game-container {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 10px;
+}
+
+/* ===== SCORE BOARD ===== */
+.score-board {
+  width: 100%;
+  display: flex;
+  justify-content: flex-end;
+  gap: 30px;
+  padding: 0 10px;
+  font-size: 16px;
+  color: var(--text-color);
+  transition: color var(--transition-speed) ease;
+}
+
+.hi-score {
+  opacity: 0.7;
+}
+
+#currentScore {
+  letter-spacing: 2px;
+}
+
+/* ===== CANVAS ===== */
+canvas {
+  background: var(--canvas-bg);
+  border-bottom: 3px solid var(--ground-color);
+  transition: background var(--transition-speed) ease, 
+              border-color var(--transition-speed) ease;
+  image-rendering: pixelated;
+  image-rendering: crisp-edges;
+}
+
+/* ===== START SCREEN OVERLAY ===== */
+.overlay {
+  position: absolute;
+  top: 30px;
+  left: 0;
+  width: 100%;
+  height: 300px;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  background: rgba(247, 247, 247, 0.95);
+  z-index: 10;
+  animation: fadeIn 0.3s ease;
+}
+
+.overlay.hidden {
+  display: none;
+}
+
+@keyframes fadeIn {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+.start-content {
+  text-align: center;
+  color: #535353;
+}
+
+.dino-icon {
+  font-size: 64px;
+  margin-bottom: 20px;
+  animation: bounce 1s ease infinite;
+}
+
+@keyframes bounce {
+  0%, 100% { transform: translateY(0); }
+  50% { transform: translateY(-15px); }
+}
+
+.start-content h1 {
+  font-size: 28px;
+  margin-bottom: 20px;
+  letter-spacing: 4px;
+}
+
+.start-content p {
+  font-size: 12px;
+  margin-bottom: 30px;
+  opacity: 0.8;
+  animation: blink 1.5s ease infinite;
+}
+
+@keyframes blink {
+  0%, 50%, 100% { opacity: 0.8; }
+  25%, 75% { opacity: 0.3; }
+}
+
+.controls-hint {
+  display: flex;
+  gap: 40px;
+  justify-content: center;
+  font-size: 10px;
+  opacity: 0.6;
+}
+
+/* ===== RESPONSIVE ===== */
+@media (max-width: 1050px) {
+  canvas {
+    width: 95vw;
+    height: auto;
+  }
+  
+  .overlay {
+    width: 95vw;
+  }
+  
+  .start-content h1 {
+    font-size: 20px;
+  }
+  
+  .controls-hint {
+    flex-direction: column;
+    gap: 10px;
+  }
+}
