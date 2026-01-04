@@ -142,6 +142,44 @@ canvas {
   opacity: 0.6;
 }
 
+/* ===== MOBILE CONTROLS ===== */
+.mobile-controls {
+  display: none;
+  width: 100%;
+  justify-content: space-between;
+  padding: 15px 10px;
+  gap: 20px;
+}
+
+.control-btn {
+  flex: 1;
+  max-width: 150px;
+  padding: 20px 30px;
+  font-family: 'Press Start 2P', cursive;
+  font-size: 14px;
+  background: var(--bg-color);
+  color: var(--text-color);
+  border: 3px solid var(--text-color);
+  border-radius: 12px;
+  cursor: pointer;
+  user-select: none;
+  -webkit-user-select: none;
+  touch-action: manipulation;
+  transition: all 0.1s ease;
+}
+
+.control-btn:active {
+  background: var(--text-color);
+  color: var(--bg-color);
+  transform: scale(0.95);
+}
+
+.control-btn span {
+  display: block;
+  font-size: 24px;
+  margin-bottom: 5px;
+}
+
 /* ===== RESPONSIVE ===== */
 @media (max-width: 1050px) {
   canvas {
@@ -160,5 +198,113 @@ canvas {
   .controls-hint {
     flex-direction: column;
     gap: 10px;
+  }
+}
+
+/* Mobile-specific styles */
+@media (max-width: 768px) {
+  body {
+    padding: 10px 0;
+  }
+  
+  .game-container {
+    width: 100%;
+    padding: 0 5px;
+  }
+  
+  canvas {
+    width: 100%;
+    height: auto;
+    border-radius: 0;
+  }
+  
+  .score-board {
+    font-size: 12px;
+    gap: 15px;
+    padding: 0 15px;
+  }
+  
+  .overlay {
+    width: 100%;
+    border-radius: 0;
+  }
+  
+  .start-content h1 {
+    font-size: 16px;
+    letter-spacing: 2px;
+  }
+  
+  .start-content p {
+    font-size: 10px;
+  }
+  
+  .dino-icon {
+    font-size: 48px;
+  }
+  
+  .controls-hint {
+    font-size: 8px;
+    gap: 8px;
+  }
+  
+  /* Show mobile controls */
+  .mobile-controls {
+    display: flex;
+  }
+}
+
+/* Extra small screens */
+@media (max-width: 480px) {
+  .score-board {
+    font-size: 10px;
+    gap: 10px;
+  }
+  
+  .start-content h1 {
+    font-size: 14px;
+  }
+  
+  .control-btn {
+    padding: 15px 20px;
+    font-size: 12px;
+  }
+  
+  .control-btn span {
+    font-size: 20px;
+  }
+}
+
+/* Landscape mobile optimization */
+@media (max-height: 500px) and (orientation: landscape) {
+  body {
+    align-items: flex-start;
+    padding-top: 10px;
+  }
+  
+  .game-container {
+    width: min(600px, 90vw);
+  }
+  
+  .dino-icon {
+    font-size: 32px;
+    margin-bottom: 10px;
+  }
+  
+  .start-content h1 {
+    font-size: 14px;
+    margin-bottom: 10px;
+  }
+  
+  .start-content p {
+    margin-bottom: 15px;
+  }
+  
+  .mobile-controls {
+    display: flex;
+    padding: 10px;
+  }
+  
+  .control-btn {
+    padding: 12px 25px;
   }
 }

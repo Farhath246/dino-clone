@@ -35,7 +35,7 @@ const player = {
   isDucking: false,
   isJumping: false,
   runFrame: 0,
-  
+
   get currentWidth() {
     return this.isDucking ? this.duckWidth : this.width;
   },
@@ -122,7 +122,7 @@ document.addEventListener("keydown", (e) => {
       jump();
     }
   }
-  
+
   if (e.code === "ArrowDown") {
     e.preventDefault();
     if (gameStarted && !gameOver) {
@@ -161,6 +161,67 @@ function handleTap(e) {
 canvas.addEventListener("touchstart", handleTouchStart, { passive: false });
 canvas.addEventListener("touchend", handleTouchEnd, { passive: false });
 startScreen.addEventListener("touchstart", (e) => { e.preventDefault(); startGame(); }, { passive: false });
+
+// ===== MOBILE BUTTON CONTROLS =====
+const jumpBtn = document.getElementById("jumpBtn");
+const duckBtn = document.getElementById("duckBtn");
+
+if (jumpBtn) {
+  jumpBtn.addEventListener("touchstart", (e) => {
+    e.preventDefault();
+    e.stopPropagation();
+    if (!gameStarted) {
+      startGame();
+    } else if (gameOver) {
+      resetGame();
+    } else {
+      jump();
+    }
+  }, { passive: false });
+
+  jumpBtn.addEventListener("mousedown", (e) => {
+    e.preventDefault();
+    if (!gameStarted) {
+      startGame();
+    } else if (gameOver) {
+      resetGame();
+    } else {
+      jump();
+    }
+  });
+}
+
+if (duckBtn) {
+  duckBtn.addEventListener("touchstart", (e) => {
+    e.preventDefault();
+    e.stopPropagation();
+    if (gameStarted && !gameOver) {
+      player.isDucking = true;
+      if (player.isJumping) player.yVelocity = 10;
+    }
+  }, { passive: false });
+
+  duckBtn.addEventListener("touchend", (e) => {
+    e.preventDefault();
+    player.isDucking = false;
+  }, { passive: false });
+
+  duckBtn.addEventListener("mousedown", (e) => {
+    e.preventDefault();
+    if (gameStarted && !gameOver) {
+      player.isDucking = true;
+      if (player.isJumping) player.yVelocity = 10;
+    }
+  });
+
+  duckBtn.addEventListener("mouseup", (e) => {
+    player.isDucking = false;
+  });
+
+  duckBtn.addEventListener("mouseleave", (e) => {
+    player.isDucking = false;
+  });
+}
 
 function handleTouchStart(e) {
   e.preventDefault();
@@ -228,13 +289,13 @@ function createFlyingObstacle() {
 // ===== GAME LOOP =====
 function update() {
   if (!gameStarted || gameOver) return;
-  
+
   frameCount++;
-  
+
   // Update score
   score += 0.15;
   currentScoreEl.textContent = formatScore(Math.floor(score));
-  
+
   // Day/Night cycle
   if (Math.floor(score) > 0 && Math.floor(score) % DAY_NIGHT_INTERVAL === 0) {
     const currentCycle = Math.floor(score / DAY_NIGHT_INTERVAL);
@@ -244,37 +305,37 @@ function update() {
       document.body.classList.toggle("night-mode", !isDay);
     }
   }
-  
+
   // Increase speed over time
   gameSpeed = Math.min(MAX_SPEED, INITIAL_SPEED + Math.floor(score / 100) * 0.5);
-  
+
   // Player physics
   player.yVelocity += GRAVITY;
   player.y += player.yVelocity;
-  
+
   const groundLevel = GROUND_Y - player.currentHeight;
   if (player.y >= groundLevel) {
     player.y = groundLevel;
     player.yVelocity = 0;
     player.isJumping = false;
   }
-  
+
   // Update run animation
   if (!player.isJumping && frameCount % 6 === 0) {
     player.runFrame = (player.runFrame + 1) % 2;
   }
-  
+
   // Move obstacles
   groundObstacles.forEach(obs => obs.x -= gameSpeed);
   flyingObstacles.forEach(obs => {
     obs.x -= gameSpeed + 2;
     if (frameCount % 8 === 0) obs.wingFrame = (obs.wingFrame + 1) % 2;
   });
-  
+
   // Move environment
   groundTiles.forEach(tile => tile.x -= gameSpeed);
   clouds.forEach(cloud => cloud.x -= cloud.speed);
-  
+
   // Collision detection
   const playerBox = {
     x: player.x + 5,
@@ -282,7 +343,7 @@ function update() {
     width: player.currentWidth - 10,
     height: player.currentHeight - 10
   };
-  
+
   [...groundObstacles, ...flyingObstacles].forEach(obs => {
     if (
       playerBox.x < obs.x + obs.width &&
@@ -298,11 +359,11 @@ function update() {
       }
     }
   });
-  
+
   // Remove off-screen obstacles
   groundObstacles = groundObstacles.filter(obs => obs.x + obs.width > 0);
   flyingObstacles = flyingObstacles.filter(obs => obs.x + obs.width > 0);
-  
+
   // Recycle ground tiles
   groundTiles.forEach(tile => {
     if (tile.x + tile.width < 0) {
@@ -323,25 +384,25 @@ function update() {
 function draw() {
   const bgColor = isDay ? "#f7f7f7" : "#1a1a2e";
   const fgColor = isDay ? "#535353" : "#e0e0e0";
-  
+
   ctx.fillStyle = bgColor;
   ctx.fillRect(0, 0, LOGICAL_WIDTH, LOGICAL_HEIGHT);
-  
+
   // Draw clouds
   ctx.fillStyle = isDay ? "#e0e0e0" : "#2a2a4e";
   clouds.forEach(cloud => {
     drawCloud(cloud.x, cloud.y, cloud.width);
   });
-  
+
   // Draw ground line
   ctx.fillStyle = fgColor;
   ctx.fillRect(0, GROUND_Y, LOGICAL_WIDTH, 2);
-  
+
   // Draw ground texture
   groundTiles.forEach(tile => {
     ctx.fillRect(tile.x, GROUND_Y + 8, tile.width, 2);
   });
-  
+
   // Draw player (dino)
   ctx.fillStyle = fgColor;
   if (player.isDucking) {
@@ -349,17 +410,17 @@ function draw() {
   } else {
     drawDino(player.x, player.y, player.runFrame, player.isJumping);
   }
-  
+
   // Draw ground obstacles (cacti)
   groundObstacles.forEach(obs => {
     drawCactus(obs.x, obs.y, obs.width, obs.height);
   });
-  
+
   // Draw flying obstacles (birds)
   flyingObstacles.forEach(obs => {
     drawBird(obs.x, obs.y, obs.wingFrame);
   });
-  
+
   // Game Over screen
   if (gameOver) {
     ctx.fillStyle = fgColor;
@@ -367,7 +428,7 @@ function draw() {
     ctx.textAlign = "center";
     ctx.fillText("GAME OVER", LOGICAL_WIDTH / 2, LOGICAL_HEIGHT / 2 - 20);
     ctx.font = "12px 'Press Start 2P'";
-    ctx.fillText("Press SPACE to restart", LOGICAL_WIDTH / 2, LOGICAL_HEIGHT / 2 + 20);
+    ctx.fillText("TAP or SPACE to restart", LOGICAL_WIDTH / 2, LOGICAL_HEIGHT / 2 + 20);
     ctx.textAlign = "left";
   }
 }
@@ -376,7 +437,7 @@ function draw() {
 function drawDino(x, y, frame, jumping) {
   const color = isDay ? "#535353" : "#e0e0e0";
   ctx.fillStyle = color;
-  
+
   // Body
   ctx.fillRect(x + 10, y, 24, 32);
   // Head
@@ -389,7 +450,7 @@ function drawDino(x, y, frame, jumping) {
   ctx.fillRect(x, y + 12, 12, 6);
   // Tail
   ctx.fillRect(x + 2, y + 4, 10, 8);
-  
+
   // Legs (animated)
   if (jumping) {
     ctx.fillRect(x + 10, y + 32, 8, 14);
@@ -406,7 +467,7 @@ function drawDino(x, y, frame, jumping) {
 function drawDuckingDino(x, y) {
   const color = isDay ? "#535353" : "#e0e0e0";
   ctx.fillStyle = color;
-  
+
   // Long body
   ctx.fillRect(x, y + 4, 50, 18);
   // Head
@@ -423,23 +484,23 @@ function drawDuckingDino(x, y) {
 function drawCactus(x, y, width, height) {
   const color = isDay ? "#535353" : "#e0e0e0";
   ctx.fillStyle = color;
-  
+
   // Main stem
-  ctx.fillRect(x + width/3, y, width/3, height);
-  
+  ctx.fillRect(x + width / 3, y, width / 3, height);
+
   // Arms (for larger cacti)
   if (width > 25) {
-    ctx.fillRect(x, y + height * 0.3, width/3, height * 0.2);
-    ctx.fillRect(x, y + height * 0.3, width/5, height * 0.4);
-    ctx.fillRect(x + width * 0.7, y + height * 0.4, width/3, height * 0.15);
-    ctx.fillRect(x + width * 0.8, y + height * 0.2, width/5, height * 0.35);
+    ctx.fillRect(x, y + height * 0.3, width / 3, height * 0.2);
+    ctx.fillRect(x, y + height * 0.3, width / 5, height * 0.4);
+    ctx.fillRect(x + width * 0.7, y + height * 0.4, width / 3, height * 0.15);
+    ctx.fillRect(x + width * 0.8, y + height * 0.2, width / 5, height * 0.35);
   }
 }
 
 function drawBird(x, y, wingFrame) {
   const color = isDay ? "#535353" : "#e0e0e0";
   ctx.fillStyle = color;
-  
+
   // Body
   ctx.fillRect(x + 8, y + 10, 30, 14);
   // Head
@@ -448,7 +509,7 @@ function drawBird(x, y, wingFrame) {
   ctx.fillRect(x + 42, y + 12, 8, 4);
   // Tail
   ctx.fillRect(x, y + 12, 10, 6);
-  
+
   // Wings (animated)
   if (wingFrame === 0) {
     ctx.fillRect(x + 14, y, 16, 10);
@@ -459,9 +520,9 @@ function drawBird(x, y, wingFrame) {
 
 function drawCloud(x, y, width) {
   ctx.beginPath();
-  ctx.arc(x, y, width/4, 0, Math.PI * 2);
-  ctx.arc(x + width/3, y - 5, width/3, 0, Math.PI * 2);
-  ctx.arc(x + width * 0.7, y, width/4, 0, Math.PI * 2);
+  ctx.arc(x, y, width / 4, 0, Math.PI * 2);
+  ctx.arc(x + width / 3, y - 5, width / 3, 0, Math.PI * 2);
+  ctx.arc(x + width * 0.7, y, width / 4, 0, Math.PI * 2);
   ctx.fill();
 }
 
