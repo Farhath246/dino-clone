@@ -6,7 +6,8 @@ const currentScoreEl = document.getElementById("currentScore");
 const highScoreEl = document.getElementById("highScore");
 
 // ===== GAME CONSTANTS =====
-const GROUND_Y = canvas.height - 50;
+let LOGICAL_WIDTH, LOGICAL_HEIGHT;
+let GROUND_Y; // will be computed on resize
 const INITIAL_SPEED = 8;
 const MAX_SPEED = 20;
 const GRAVITY = 0.6;
@@ -25,7 +26,7 @@ let frameCount = 0;
 // ===== PLAYER =====
 const player = {
   x: 80,
-  y: GROUND_Y,
+  y: 0,
   width: 44,
   height: 48,
   duckWidth: 58,
@@ -60,25 +61,44 @@ const CACTUS_TYPES = [
   { width: 50, height: 45 },  // Double
 ];
 
-const BIRD_Y_POSITIONS = [
-  GROUND_Y - 80,  // Low (duck or jump)
-  GROUND_Y - 50,  // Ground level (jump)
-  GROUND_Y - 120, // High (safe or duck)
-];
+// bird positions computed when spawning flying obstacles
+
+// ===== INITIALIZATION =====
+function resizeCanvas() {
+  const dpr = window.devicePixelRatio || 1;
+  LOGICAL_WIDTH = Math.min(window.innerWidth - 20, 1000);
+  LOGICAL_HEIGHT = Math.round(LOGICAL_WIDTH * 0.3);
+
+  canvas.style.width = LOGICAL_WIDTH + "px";
+  canvas.style.height = LOGICAL_HEIGHT + "px";
+
+  canvas.width = LOGICAL_WIDTH * dpr;
+  canvas.height = LOGICAL_HEIGHT * dpr;
+
+  // Keep drawing coordinates in logical pixels
+  ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+
+  GROUND_Y = LOGICAL_HEIGHT - 50;
+}
 
 // ===== INITIALIZATION =====
 function init() {
   highScoreEl.textContent = formatScore(highScore);
-  
+
   // Initialize ground tiles
-  for (let x = 0; x < canvas.width + 100; x += 20) {
+  groundTiles = [];
+  for (let x = 0; x < LOGICAL_WIDTH + 100; x += 20) {
     groundTiles.push({ x, width: Math.random() > 0.7 ? 15 : 5 });
   }
-  
+
   // Initialize clouds
+  clouds = [];
   for (let i = 0; i < 4; i++) {
-    clouds.push(createCloud(Math.random() * canvas.width));
+    clouds.push(createCloud(Math.random() * LOGICAL_WIDTH));
   }
+
+  // Place player on ground
+  player.y = GROUND_Y - player.height;
 }
 
 function createCloud(x) {
@@ -123,10 +143,9 @@ document.addEventListener("keyup", (e) => {
 
 // Touch/Click controls
 canvas.addEventListener("mousedown", handleTap);
-canvas.addEventListener("touchstart", handleTap);
 startScreen.addEventListener("click", handleTap);
-startScreen.addEventListener("touchstart", handleTap);
 
+// Mouse / desktop tap
 function handleTap(e) {
   e.preventDefault();
   if (!gameStarted) {
@@ -136,6 +155,38 @@ function handleTap(e) {
   } else {
     jump();
   }
+}
+
+// Mobile touch: tap to jump, bottom-area touch to duck
+canvas.addEventListener("touchstart", handleTouchStart, { passive: false });
+canvas.addEventListener("touchend", handleTouchEnd, { passive: false });
+startScreen.addEventListener("touchstart", (e) => { e.preventDefault(); startGame(); }, { passive: false });
+
+function handleTouchStart(e) {
+  e.preventDefault();
+  const t = e.touches[0];
+  if (!gameStarted) {
+    startGame();
+    return;
+  }
+  if (gameOver) {
+    resetGame();
+    return;
+  }
+
+  // If touch is near the bottom of the screen, duck; otherwise jump
+  if (t.clientY > window.innerHeight * 0.6) {
+    player.isDucking = true;
+    // Fast fall if in air
+    if (player.isJumping) player.yVelocity = 10;
+  } else {
+    jump();
+  }
+}
+
+function handleTouchEnd(e) {
+  e.preventDefault();
+  player.isDucking = false;
 }
 
 function jump() {
@@ -154,7 +205,7 @@ function startGame() {
 function createGroundObstacle() {
   const type = CACTUS_TYPES[Math.floor(Math.random() * CACTUS_TYPES.length)];
   groundObstacles.push({
-    x: canvas.width,
+    x: LOGICAL_WIDTH,
     y: GROUND_Y - type.height,
     width: type.width,
     height: type.height
@@ -162,9 +213,11 @@ function createGroundObstacle() {
 }
 
 function createFlyingObstacle() {
-  const yPos = BIRD_Y_POSITIONS[Math.floor(Math.random() * BIRD_Y_POSITIONS.length)];
+  const offsets = [80, 50, 120];
+  const offset = offsets[Math.floor(Math.random() * offsets.length)];
+  const yPos = Math.max(20, GROUND_Y - offset);
   flyingObstacles.push({
-    x: canvas.width,
+    x: LOGICAL_WIDTH,
     y: yPos,
     width: 46,
     height: 32,
@@ -253,14 +306,14 @@ function update() {
   // Recycle ground tiles
   groundTiles.forEach(tile => {
     if (tile.x + tile.width < 0) {
-      tile.x = canvas.width + Math.random() * 20;
+      tile.x = LOGICAL_WIDTH + Math.random() * 20;
     }
   });
-  
+
   // Recycle clouds
   clouds.forEach(cloud => {
     if (cloud.x + cloud.width < 0) {
-      cloud.x = canvas.width + Math.random() * 100;
+      cloud.x = LOGICAL_WIDTH + Math.random() * 100;
       cloud.y = Math.random() * 80 + 20;
     }
   });
@@ -272,7 +325,7 @@ function draw() {
   const fgColor = isDay ? "#535353" : "#e0e0e0";
   
   ctx.fillStyle = bgColor;
-  ctx.fillRect(0, 0, canvas.width, canvas.height);
+  ctx.fillRect(0, 0, LOGICAL_WIDTH, LOGICAL_HEIGHT);
   
   // Draw clouds
   ctx.fillStyle = isDay ? "#e0e0e0" : "#2a2a4e";
@@ -282,7 +335,7 @@ function draw() {
   
   // Draw ground line
   ctx.fillStyle = fgColor;
-  ctx.fillRect(0, GROUND_Y, canvas.width, 2);
+  ctx.fillRect(0, GROUND_Y, LOGICAL_WIDTH, 2);
   
   // Draw ground texture
   groundTiles.forEach(tile => {
@@ -312,9 +365,9 @@ function draw() {
     ctx.fillStyle = fgColor;
     ctx.font = "24px 'Press Start 2P'";
     ctx.textAlign = "center";
-    ctx.fillText("GAME OVER", canvas.width / 2, canvas.height / 2 - 20);
+    ctx.fillText("GAME OVER", LOGICAL_WIDTH / 2, LOGICAL_HEIGHT / 2 - 20);
     ctx.font = "12px 'Press Start 2P'";
-    ctx.fillText("Press SPACE to restart", canvas.width / 2, canvas.height / 2 + 20);
+    ctx.fillText("Press SPACE to restart", LOGICAL_WIDTH / 2, LOGICAL_HEIGHT / 2 + 20);
     ctx.textAlign = "left";
   }
 }
@@ -441,21 +494,30 @@ function gameLoop() {
 // ===== OBSTACLE SPAWNING =====
 function spawnObstacles() {
   if (!gameStarted || gameOver) return;
-  
+
   const rand = Math.random();
-  
+
   // Spawn flying obstacles after score > 200
   if (score > 200 && rand < 0.25 && flyingObstacles.length === 0) {
     createFlyingObstacle();
   } else if (rand < 0.6 && groundObstacles.length < 3) {
     const lastObs = groundObstacles[groundObstacles.length - 1];
-    if (!lastObs || lastObs.x < canvas.width - 200) {
+    if (!lastObs || lastObs.x < LOGICAL_WIDTH - 200) {
       createGroundObstacle();
     }
   }
 }
 
 // ===== START =====
+// Start: ensure canvas fits viewport then init
+resizeCanvas();
 init();
 gameLoop();
 setInterval(spawnObstacles, 800);
+
+// Recompute layout / reset on viewport changes
+window.addEventListener('resize', () => {
+  resizeCanvas();
+  resetGame();
+  init();
+});
